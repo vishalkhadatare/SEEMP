@@ -8,6 +8,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../../booking/screens/user_bookings_screen.dart';
 import '../../equipment/screens/rc_verification_screen.dart';
 import '../../home/screens/home_screen.dart';
+import '../../notifications/notifications_screen.dart';
 
 // ─────────────────────────────────────────────────────────────
 // User Shell — 4-tab bottom nav
@@ -29,7 +30,8 @@ class _UserShellState extends State<UserShell> {
   final List<Widget> _pages = const [
     HomeScreen(),
     _UserBookings(),
-    _UserNotifications(),
+    // Use the new notifications screen
+    NotificationsScreen(),
     _UserProfile(),
   ];
 

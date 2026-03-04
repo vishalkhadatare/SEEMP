@@ -202,11 +202,11 @@ class _SearchScreenState extends State<SearchScreen> {
       child: Container(
         height: 50,
         decoration: BoxDecoration(
-          color: _card,
+          color: const Color(0xFF2A2A3E),
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -215,11 +215,12 @@ class _SearchScreenState extends State<SearchScreen> {
         child: TextField(
           controller: _searchController,
           onChanged: (v) => setState(() => _searchQuery = v),
-          style: GoogleFonts.poppins(fontSize: 14, color: _dark),
+          style: GoogleFonts.poppins(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w500),
+          cursorColor: _accent,
           decoration: InputDecoration(
             hintText: 'Search equipment, model, provider...',
-            hintStyle: GoogleFonts.poppins(fontSize: 14, color: _sub),
-            prefixIcon: const Icon(Icons.search_rounded, color: _sub, size: 22),
+            hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.white70),
+            prefixIcon: const Icon(Icons.search_rounded, color: Colors.white70, size: 22),
             suffixIcon: _searchQuery.isNotEmpty
                 ? GestureDetector(
                     onTap: () {
@@ -228,7 +229,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     },
                     child: const Icon(
                       Icons.close_rounded,
-                      color: _sub,
+                      color: Colors.white70,
                       size: 20,
                     ),
                   )

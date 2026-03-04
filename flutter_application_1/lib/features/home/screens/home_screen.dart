@@ -2,14 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../core/services/favorites_service.dart';
-import '../../../core/services/stats_service.dart';
-import '../../auth/providers/auth_provider.dart';
-import '../../equipment/services/equipment_service.dart' as equip_svc;
-import '../models/equipment_model.dart';
-import '../widgets/equipment_image.dart';
-import 'equipment_details_screen.dart';
-import 'search_screen.dart';
+import 'package:equippro/core/services/notifications_service.dart';
+import 'package:equippro/features/notifications/notifications_screen.dart';
+import 'package:equippro/features/provider/screens/provider_details_screen.dart';
+import 'package:equippro/core/widgets/app_logo.dart';
+import 'package:equippro/features/home/screens/all_equipments_screen.dart';
+import 'package:equippro/core/services/favorites_service.dart';
+import 'package:equippro/core/services/stats_service.dart';
+import 'package:equippro/features/auth/providers/auth_provider.dart';
+import 'package:equippro/features/equipment/services/equipment_service.dart'
+    as equip_svc;
+import 'package:equippro/features/home/models/equipment_model.dart';
+import 'package:equippro/features/home/widgets/equipment_image.dart';
+import 'package:equippro/features/home/screens/equipment_details_screen.dart';
+import 'package:equippro/features/home/screens/search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const Color _green = Color(0xFF00C853);
 
   int _selectedCategoryIndex = 0;
+  int _featuredCategoryIndex = 0;
   final PageController _bannerController = PageController(
     viewportFraction: 0.9,
   );
@@ -46,6 +53,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final cat = EquipmentModel.categories[_selectedCategoryIndex];
     if (cat == 'All') return all;
     return all.where((e) => e.category == cat).toList();
+  }
+
+  List<EquipmentModel> get _filteredFeaturedEquipment {
+    final featured = _allEquipmentUI.where((e) => e.rating >= 4.0).toList();
+    final cat = EquipmentModel.categories[_featuredCategoryIndex];
+    if (cat == 'All') return featured;
+    return featured.where((e) => e.category == cat).toList();
   }
 
   @override
@@ -89,10 +103,22 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverToBoxAdapter(child: _buildQuickStats()),
             // 5. Categories
             SliverToBoxAdapter(child: _buildCategoryChips()),
-            // 6. Featured equipment (horizontal)
+            // 6. Featured equipment with category filters
             SliverToBoxAdapter(
-              child: _buildSectionHeader('Featured Equipment', 'Top rated'),
+              child: _buildSectionHeader(
+                'Featured Equipment',
+                'Top rated',
+                onViewAll: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AllEquipmentsScreen(),
+                    ),
+                  );
+                },
+              ),
             ),
+            SliverToBoxAdapter(child: _buildFeaturedCategoryChips()),
             SliverToBoxAdapter(child: _buildFeaturedEquipment()),
             // 7. Top Providers
             SliverToBoxAdapter(
@@ -103,7 +129,18 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverToBoxAdapter(child: _buildHowItWorks()),
             // 9. Recently added (horizontal)
             SliverToBoxAdapter(
-              child: _buildSectionHeader('Recently Added', 'New'),
+              child: _buildSectionHeader(
+                'Recently Added',
+                'New',
+                onViewAll: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AllEquipmentsScreen(),
+                    ),
+                  );
+                },
+              ),
             ),
             SliverToBoxAdapter(child: _buildRecentlyAdded()),
             // 10. Available equipment (vertical feed)
@@ -111,6 +148,14 @@ class _HomeScreenState extends State<HomeScreen> {
               child: _buildSectionHeader(
                 'All Equipment',
                 '${_filteredEquipment.length} found',
+                onViewAll: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AllEquipmentsScreen(),
+                    ),
+                  );
+                },
               ),
             ),
             SliverPadding(
@@ -123,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            const SliverToBoxAdapter(child: SizedBox(height: 40)),
           ],
         ),
       ),
@@ -140,6 +185,8 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         children: [
+          const AppLogo(size: 44),
+          const SizedBox(width: 10),
           Container(
             width: 50,
             height: 50,
@@ -202,29 +249,52 @@ class _HomeScreenState extends State<HomeScreen> {
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
+                barrierColor: Colors.white,
                 builder: (_) => _FavoritesSheet(equipment: favEquipment),
               );
             },
             child: _iconButton(Icons.favorite_border_rounded),
           ),
           const SizedBox(width: 10),
-          Stack(
-            children: [
-              _iconButton(Icons.notifications_none_rounded),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  width: 9,
-                  height: 9,
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: _card, width: 1.5),
-                  ),
-                ),
-              ),
-            ],
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
+            child: Consumer<NotificationsProvider>(
+              builder: (_, notif, __) {
+                final count = notif.unseenCount;
+                return Stack(
+                  children: [
+                    _iconButton(Icons.notifications_none_rounded),
+                    if (count > 0)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _card, width: 1.5),
+                          ),
+                          child: Text(
+                            count > 99 ? '99+' : count.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -672,9 +742,75 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildFeaturedCategoryChips() {
+    final categoryIcons = [
+      Icons.apps_rounded,
+      Icons.precision_manufacturing_rounded,
+      Icons.landscape_rounded,
+      Icons.front_loader,
+      Icons.height_rounded,
+      Icons.local_shipping_rounded,
+      Icons.radio_button_checked_rounded,
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: SizedBox(
+        height: 40,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: EquipmentModel.categories.length,
+          itemBuilder: (context, index) {
+            final isSelected = _featuredCategoryIndex == index;
+            return GestureDetector(
+              onTap: () => setState(() => _featuredCategoryIndex = index),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected ? _accent : _card,
+                  borderRadius: BorderRadius.circular(12),
+                  border: isSelected
+                      ? null
+                      : Border.all(color: const Color(0xFFE8E8E8)),
+                ),
+                child: Center(
+                  child: Text(
+                    EquipmentModel.categories[index],
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected ? Colors.white : _dark,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   // ─── 6. FEATURED EQUIPMENT ──────────────────────────────────────
   Widget _buildFeaturedEquipment() {
-    final featured = _allEquipmentUI.where((e) => e.rating >= 4.0).toList();
+    final featured = _filteredFeaturedEquipment;
+
+    if (featured.isEmpty) {
+      return SizedBox(
+        height: 120,
+        child: Center(
+          child: Text(
+            'No featured equipment in this category',
+            style: GoogleFonts.poppins(fontSize: 13, color: _sub),
+          ),
+        ),
+      );
+    }
 
     return SizedBox(
       height: 260,
@@ -840,142 +976,84 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ─── 7. TOP PROVIDERS ──────────────────────────────────────────
   Widget _buildTopProviders() {
-    // Collect unique providers
+    // Simplified top providers row to avoid deep nesting and parsing issues.
     final providerMap = <String, _ProviderDisplayData>{};
     for (final e in _allEquipmentUI) {
-      if (!providerMap.containsKey(e.provider.id)) {
-        providerMap[e.provider.id] = _ProviderDisplayData(
-          e.provider,
-          1,
-          e.imageAsset,
-        );
-      } else {
-        providerMap[e.provider.id] = _ProviderDisplayData(
-          e.provider,
-          providerMap[e.provider.id]!.count + 1,
-          providerMap[e.provider.id]!.sampleImage,
-        );
-      }
+      providerMap.putIfAbsent(
+        e.provider.id,
+        () => _ProviderDisplayData(e.provider, 1, e.imageAsset),
+      );
+      providerMap[e.provider.id] = _ProviderDisplayData(
+        e.provider,
+        (providerMap[e.provider.id]?.count ?? 0) + 1,
+        providerMap[e.provider.id]?.sampleImage ?? e.imageAsset,
+      );
     }
-    final providers = providerMap.values.toList()
-      ..sort((a, b) => b.provider.rating.compareTo(a.provider.rating));
+
+    final providers = providerMap.values.toList();
 
     return SizedBox(
-      height: 170,
+      height: 140,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: providers.length,
         itemBuilder: (context, index) {
           final p = providers[index];
-          final colors = [
-            [const Color(0xFFFF6B00), const Color(0xFFFF9A44)],
-            [const Color(0xFF6C63FF), const Color(0xFF8B83FF)],
-            [const Color(0xFF00B894), const Color(0xFF55E6C1)],
-            [const Color(0xFFE17055), const Color(0xFFF19066)],
-            [const Color(0xFF0984E3), const Color(0xFF74B9FF)],
-            [const Color(0xFF6D214F), const Color(0xFFB33771)],
-          ];
-          final gradientColors = colors[index % colors.length];
-
-          return Container(
-            width: 150,
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: _card,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(colors: gradientColors),
-                    boxShadow: [
-                      BoxShadow(
-                        color: gradientColors[0].withValues(alpha: 0.35),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProviderDetailsScreen(provider: p.provider),
                   ),
-                  child: Center(
-                    child: Text(
-                      p.provider.name[0].toUpperCase(),
-                      style: GoogleFonts.poppins(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+                );
+              },
+              child: Container(
+                width: 150,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _card,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  p.provider.name,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _dark,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Row(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      size: 14,
-                      color: Color(0xFFFFB800),
+                    CircleAvatar(
+                      backgroundColor: Colors.orange.shade600,
+                      radius: 28,
+                      child: Text(
+                        p.provider.name.isNotEmpty
+                            ? p.provider.name[0].toUpperCase()
+                            : 'P',
+                        style: GoogleFonts.poppins(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 3),
+                    const SizedBox(height: 10),
                     Text(
-                      p.provider.rating.toStringAsFixed(1),
+                      p.provider.name,
                       style: GoogleFonts.poppins(
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: _dark,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      ' · ${p.count} ads',
+                      '${p.count} ads',
                       style: GoogleFonts.poppins(fontSize: 11, color: _sub),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      size: 12,
-                      color: _sub,
-                    ),
-                    const SizedBox(width: 2),
-                    Flexible(
-                      child: Text(
-                        p.provider.location.split(',').first,
-                        style: GoogleFonts.poppins(fontSize: 10, color: _sub),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           );
         },
@@ -1271,7 +1349,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ─── SECTION HEADER ─────────────────────────────────────────────
-  Widget _buildSectionHeader(String title, String trailing) {
+  Widget _buildSectionHeader(
+    String title,
+    String trailing, {
+    VoidCallback? onViewAll,
+  }) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 12),
       child: Row(
@@ -1285,20 +1367,42 @@ class _HomeScreenState extends State<HomeScreen> {
               color: _dark,
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _accentLight,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              trailing,
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: _accent,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: _accentLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  trailing,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: _accent,
+                  ),
+                ),
               ),
-            ),
+              if (onViewAll != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: GestureDetector(
+                    onTap: onViewAll,
+                    child: Text(
+                      'View All',
+                      style: GoogleFonts.poppins(
+                        color: _accent,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),

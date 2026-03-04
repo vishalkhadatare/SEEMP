@@ -993,6 +993,7 @@ class _ProviderRegistrationScreenState
       context: context,
       isScrollControlled: true,
       backgroundColor: _card,
+      barrierColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),

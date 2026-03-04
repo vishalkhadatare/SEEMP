@@ -5,19 +5,20 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/services/stats_service.dart';
+import '../../../core/services/notifications_service.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../notifications/notifications_screen.dart';
 import '../../booking/screens/provider_bookings_screen.dart';
 import '../../equipment/screens/add_equipment_screen.dart';
 
 import '../../equipment/screens/owner_equipment_detail_screen.dart';
 import '../../equipment/services/equipment_service.dart' as equip_svc;
 import '../../home/models/equipment_model.dart';
-import '../../home/widgets/equipment_image.dart';
-import '../../provider/screens/provider_registration_screen.dart';
-
+import '../../home/widgets/equipment_image.dart'
+    show EquipmentImage;
 // ─────────────────────────────────────────────────────────────
-// Owner Shell — 5-tab bottom nav
-//  Dashboard · Equipment · Bookings · Services · Profile
+// Owner Shell — 4-tab bottom nav
+//  Dashboard · Equipment · Bookings · Profile
 // ─────────────────────────────────────────────────────────────
 
 class OwnerShell extends StatefulWidget {
@@ -36,7 +37,6 @@ class _OwnerShellState extends State<OwnerShell> {
     _OwnerDashboard(),
     _OwnerEquipment(),
     _OwnerBookings(),
-    _OwnerServices(),
     _OwnerProfile(),
   ];
 
@@ -65,8 +65,7 @@ class _OwnerShellState extends State<OwnerShell> {
                 _nav(Icons.dashboard_rounded, 'Dashboard', 0),
                 _nav(Icons.construction_rounded, 'Equipment', 1),
                 _nav(Icons.event_note_rounded, 'Bookings', 2),
-                _nav(Icons.build_circle_outlined, 'Services', 3),
-                _nav(Icons.person_outline_rounded, 'Profile', 4),
+                _nav(Icons.person_outline_rounded, 'Profile', 3),
               ],
             ),
           ),
@@ -143,6 +142,7 @@ class _OwnerDashboardState extends State<_OwnerDashboard> {
     final auth = Provider.of<AuthProvider>(context);
     final stats = context.watch<StatsProvider>().userStats;
     final equipProv = context.watch<equip_svc.EquipmentProvider>();
+    final notifProv = context.watch<NotificationsProvider>();
     final myEquip = equipProv.equipment
         .map((f) => EquipmentModel.fromFirestoreModel(f))
         .toList();
@@ -158,26 +158,6 @@ class _OwnerDashboardState extends State<_OwnerDashboard> {
               // Greeting
               Row(
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Hello, ${auth.userName.split(' ').first}!',
-                          style: GoogleFonts.poppins(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                            color: _dark,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Equipment Owner Dashboard',
-                          style: GoogleFonts.poppins(fontSize: 13, color: _sub),
-                        ),
-                      ],
-                    ),
-                  ),
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: _accent,
@@ -190,6 +170,84 @@ class _OwnerDashboardState extends State<_OwnerDashboard> {
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hello, ${auth.userName.split(' ').first}!',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: _dark,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Equipment Owner',
+                          style: GoogleFonts.poppins(fontSize: 12, color: _sub),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Likes feature coming soon!',
+                            style: GoogleFonts.poppins(),
+                          ),
+                          backgroundColor: _accent,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      );
+                    },
+                    child: Icon(Icons.favorite_border_rounded,
+                        color: _sub, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen(),
+                      ),
+                    ),
+                    child: Stack(
+                      children: [
+                        Icon(Icons.notifications_none_rounded,
+                            color: _sub, size: 24),
+                        if (notifProv.unseenCount > 0)
+                          Positioned(
+                            top: -4,
+                            right: -4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF6B00),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '${notifProv.unseenCount}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -291,36 +349,93 @@ class _OwnerDashboardState extends State<_OwnerDashboard> {
                 style: GoogleFonts.poppins(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: _dark,
+                  color: const Color.fromARGB(255, 51, 51, 201),
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  _quickAction(
-                    Icons.add_circle_rounded,
-                    'Add\nEquipment',
-                    _accent,
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AddEquipmentScreen(),
+              Center(
+                child: Column(
+                  children: [
+                    _quickAction(
+                      Icons.add_circle_rounded,
+                      'Add\nEquipment',
+                      _accent,
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddEquipmentScreen(),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  _quickAction(
-                    Icons.business_rounded,
-                    'Register\nProvider',
-                    _blue,
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ProviderRegistrationScreen(),
+                    const SizedBox(height: 16),
+                    // Equipment Status Dropdown
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _card,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inventory_rounded, color: _blue, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Equipment Status: ',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: _sub,
+                            ),
+                          ),
+                          DropdownButton<String>(
+                            value: 'Available',
+                            underline: const SizedBox.shrink(),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'Available',
+                                child: Text('Available'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Rented',
+                                child: Text('Rented'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'Under Maintenance',
+                                child: Text('Under Maintenance'),
+                              ),
+                            ],
+                            onChanged: (String? value) {
+                              if (value != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Status changed to $value',
+                                      style: GoogleFonts.poppins(),
+                                    ),
+                                    backgroundColor: _accent,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -1131,16 +1246,6 @@ class _OwnerProfileState extends State<_OwnerProfile> {
                     );
                   },
                 ),
-                _M(
-                  Icons.business_rounded,
-                  'Register as Provider',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ProviderRegistrationScreen(),
-                    ),
-                  ),
-                ),
               ]),
               const SizedBox(height: 14),
               _section('General', [
@@ -1148,17 +1253,10 @@ class _OwnerProfileState extends State<_OwnerProfile> {
                   Icons.notifications_none_rounded,
                   'Notifications',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'No new notifications',
-                          style: GoogleFonts.poppins(),
-                        ),
-                        backgroundColor: _accent,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen(),
                       ),
                     );
                   },

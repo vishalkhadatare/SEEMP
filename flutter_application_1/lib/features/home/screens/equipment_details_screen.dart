@@ -24,7 +24,7 @@ class _EquipmentDetailsScreenState extends State<EquipmentDetailsScreen> {
   static const Color _bg = Color(0xFFF7F7F7);
   static const Color _accent = Color(0xFFFF6B00);
   static const Color _accentLight = Color(0xFFFFF3E8);
-  static const Color _dark = Color(0xFF1A1A2E);
+  static const Color _dark = Color.fromARGB(255, 190, 241, 185);
   static const Color _sub = Color(0xFF8F90A6);
   static const Color _card = Colors.white;
 

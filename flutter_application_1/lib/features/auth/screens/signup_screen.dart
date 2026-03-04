@@ -18,8 +18,10 @@ class _SignupScreenState extends State<SignupScreen>
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   bool _ob1 = true, _ob2 = true, _agreed = false;
   AccountType? _type;
+  
 
   late final AnimationController _entryCtrl;
   late final Animation<double> _headerFade;
@@ -114,6 +116,8 @@ class _SignupScreenState extends State<SignupScreen>
     _emailCtrl.dispose();
     _passCtrl.dispose();
     _confirmCtrl.dispose();
+    _phoneCtrl.dispose();
+    
     super.dispose();
   }
 
@@ -128,6 +132,7 @@ class _SignupScreenState extends State<SignupScreen>
       _toast('Please agree to the Terms & Conditions');
       return;
     }
+    // Phone verification is optional for now; proceed without OTP.
     final ok = await context.read<AuthProvider>().signUp(
       name: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
@@ -142,7 +147,10 @@ class _SignupScreenState extends State<SignupScreen>
       } else {
         _toast(msg);
       }
+      return;
     }
+
+    // Previously we linked phone credentials here; skipping for now.
   }
 
   Future<void> _google() async {
@@ -652,6 +660,20 @@ class _SignupScreenState extends State<SignupScreen>
             if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
               return 'Enter a valid email';
             }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        _label('Phone Number (optional)'),
+        const SizedBox(height: 10),
+        _field(
+          ctrl: _phoneCtrl,
+          hint: '+911234567890',
+          icon: Icons.phone_rounded,
+          kb: TextInputType.phone,
+          validator: (v) {
+            if (v == null || v.isEmpty) return null; // optional
+            if (!v.startsWith('+')) return 'Include country code (e.g., +91)';
             return null;
           },
         ),

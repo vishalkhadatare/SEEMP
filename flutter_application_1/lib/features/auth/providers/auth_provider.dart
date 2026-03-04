@@ -9,6 +9,9 @@ enum AuthState { splash, onboarding, login, signup, authenticated }
 
 /// Provider to manage authentication state with Firebase
 class AuthProvider extends ChangeNotifier {
+  // Configure your dynamic link domain for in-app email verification handling.
+  // Replace with your Firebase Dynamic Links domain (e.g. https://yourapp.page.link)
+  static const String dynamicLinkDomain = 'https://yourapp.page.link';
   AuthState _state = AuthState.splash;
   bool _isLoading = false;
   bool _isGoogleLoading = false;
@@ -152,6 +155,13 @@ class AuthProvider extends ChangeNotifier {
             .collection('users')
             .doc(createdUser.uid)
             .set(appUser.toMap(), SetOptions(merge: true));
+        // Send email verification with deep link settings so user can return to app
+        try {
+          await createdUser.sendEmailVerification(ActionCodeSettings(
+            url: '${dynamicLinkDomain}/verify?uid=${createdUser.uid}',
+            handleCodeInApp: true,
+          ));
+        } catch (_) {}
       }
 
       _currentUser = email;

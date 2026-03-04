@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart' as legacy;
 import 'core/services/favorites_service.dart';
+import 'core/services/notifications_service.dart';
 import 'core/services/stats_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/providers/auth_provider.dart';
@@ -35,7 +36,7 @@ Future<void> main() async {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
+      statusBarColor: Color.fromARGB(0, 114, 144, 122),
       statusBarIconBrightness: Brightness.light,
       statusBarBrightness: Brightness.dark,
       systemNavigationBarColor: Colors.transparent,
@@ -66,6 +67,9 @@ Future<void> main() async {
           legacy.ChangeNotifierProvider<StatsProvider>(
             create: (_) => StatsProvider(),
           ),
+          legacy.ChangeNotifierProvider<NotificationsProvider>(
+            create: (_) => NotificationsProvider(),
+          ),
         ],
         child: const EquipProApp(),
       ),
@@ -80,7 +84,7 @@ class EquipProApp extends ConsumerWidget {  const EquipProApp({super.key});
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'EquipPro',
+      title: 'EquipRent',
       theme: AppTheme.lightTheme(),
       routerConfig: router,
       debugShowCheckedModeBanner: false,

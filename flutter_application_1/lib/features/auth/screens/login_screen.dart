@@ -851,6 +851,7 @@ class _LoginScreenState extends State<LoginScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: _surface,
+      barrierColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
