@@ -377,45 +377,45 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Check if already have a cached Google user
-      GoogleSignInAccount? googleUser =
-          _cachedGoogleUser ?? await _googleSignIn.signIn();
+      UserCredential userCredential;
 
-      if (googleUser == null) {
-        // User cancelled the sign-in
-        _isLoading = false;
-        _isGoogleLoading = false;
-        _cachedGoogleUser = null;
-        notifyListeners();
-        return false;
+      if (kIsWeb) {
+        // Web: use Firebase popup — no GoogleSignIn package needed
+        final provider = GoogleAuthProvider()
+          ..addScope('email')
+          ..addScope('profile');
+        userCredential = await _firebaseAuth.signInWithPopup(provider);
+      } else {
+        // Mobile: use GoogleSignIn package
+        GoogleSignInAccount? googleUser =
+            _cachedGoogleUser ?? await _googleSignIn.signIn();
+
+        if (googleUser == null) {
+          _isLoading = false;
+          _isGoogleLoading = false;
+          _cachedGoogleUser = null;
+          notifyListeners();
+          return false;
+        }
+
+        _cachedGoogleUser = googleUser;
+        final googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        userCredential = await _firebaseAuth.signInWithCredential(credential);
       }
-
-      _cachedGoogleUser = googleUser;
-
-      // Obtain auth details (no artificial timeout — let the platform handle it)
-      final googleAuth = await googleUser.authentication;
-
-      // Create Firebase credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Sign in with Firebase
-      final userCredential = await _firebaseAuth.signInWithCredential(
-        credential,
-      );
 
       await _loadCurrentAccountType(userCredential.user?.uid);
 
-      _currentUser = userCredential.user?.email ?? googleUser.email;
+      _currentUser = userCredential.user?.email;
       _state = AuthState.authenticated;
       _isLoading = false;
       _isGoogleLoading = false;
       notifyListeners();
       return true;
     } on TimeoutException {
-      // Should no longer happen, but handle gracefully just in case
       _cachedGoogleUser = null;
       _errorMessage =
           'Connection timed out. Please check your internet and try again.';
